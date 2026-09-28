@@ -1,0 +1,14 @@
+# Cloudflare Pages / Workers Configuration
+name = "anhkhaishop"
+pages_build_output_dir = "."
+
+# Cloudflare D1 Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "anhkhaishop-db"
+database_id = "your-d1-database-id"
+
+# Cloudflare R2 Image Storage Bucket Binding
+[[r2_buckets]]
+binding = "MY_R2_BUCKET"
+bucket_name = "anhkhaishop-images"

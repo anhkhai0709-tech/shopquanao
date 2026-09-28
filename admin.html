@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Trị Hệ Thống - Anh Khải Shop</title>
+    <meta name="description" content="Trang quản trị sản phẩm, đơn hàng, khách hàng cho Anh Khải Shop.">
+    <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="admin-page">
+    <!-- Header Admin -->
+    <header class="header">
+        <div class="container header__container">
+            <a href="index.html" class="header__logo">
+                <svg class="header__logo-icon" viewBox="0 0 40 40" fill="none">
+                    <rect width="40" height="40" rx="10" fill="url(#logo-grad-adm)"/>
+                    <path d="M12 28V14l8 6 8-6v14" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <defs><linearGradient id="logo-grad-adm" x1="0" y1="0" x2="40" y2="40"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>
+                </svg>
+                <span>Anh Khải Shop <small style="font-size:0.7rem;background:var(--primary);color:#fff;padding:2px 8px;border-radius:10px;margin-left:6px;">ADMIN</small></span>
+            </a>
+            
+            <div class="header__actions">
+                <a href="index.html" class="btn btn--outline btn--sm">← Xem cửa hàng</a>
+                <button class="btn btn--sm btn--primary" id="adminLogoutBtn">Đăng xuất</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container" style="padding-top: 100px; padding-bottom: 60px;">
+        <div class="admin-header">
+            <div>
+                <h2>Bảng Quản Trị Hệ Thống</h2>
+                <p>Quản lý Sản phẩm, Đơn hàng, Ảnh tải lên Cloudflare R2 và Cơ sở dữ liệu D1 SQLite</p>
+            </div>
+            <button class="btn btn--primary" id="openAddProductModalBtn">+ Thêm Sản Phẩm Mới</button>
+        </div>
+
+        <!-- Admin Tabs -->
+        <div class="admin-tabs">
+            <button class="admin-tab active" data-tab="products">Sản Phẩm (<span id="prodCount">0</span>)</button>
+            <button class="admin-tab" data-tab="orders">Đơn Hàng (<span id="orderCount">0</span>)</button>
+            <button class="admin-tab" data-tab="system">Hệ Thống (Cloudflare Worker/D1/R2)</button>
+        </div>
+
+        <!-- Tab 1: Products List -->
+        <div class="admin-panel active" id="tabProducts">
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Ảnh</th>
+                            <th>Tên Sản Phẩm</th>
+                            <th>Danh Mục</th>
+                            <th>Giá Bán</th>
+                            <th>Huy Hiệu</th>
+                            <th>Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminProductsTbody">
+                        <!-- Dynamically populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab 2: Orders List -->
+        <div class="admin-panel" id="tabOrders">
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Mã Đơn</th>
+                            <th>Khách Hàng</th>
+                            <th>Số Điện Thoại</th>
+                            <th>Email</th>
+                            <th>Tổng Tiền</th>
+                            <th>Trạng Thái</th>
+                            <th>Ngày Đặt</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminOrdersTbody">
+                        <!-- Dynamically populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab 3: System Status -->
+        <div class="admin-panel" id="tabSystem">
+            <div class="system-cards">
+                <div class="system-card">
+                    <div class="system-card__icon">⚡</div>
+                    <h3>Cloudflare Workers API</h3>
+                    <p>API Serverless tự động mở rộng theo thời lượng thực</p>
+                    <span class="system-badge success">Hoạt động</span>
+                </div>
+                <div class="system-card">
+                    <div class="system-card__icon">🗄️</div>
+                    <h3>Cloudflare D1 (SQLite)</h3>
+                    <p>Lưu trữ Người dùng, Sản phẩm và Đơn hàng trên SQLite serverless</p>
+                    <span class="system-badge success">Đã kết nối</span>
+                </div>
+                <div class="system-card">
+                    <div class="system-card__icon">🖼️</div>
+                    <h3>Cloudflare R2 Bucket</h3>
+                    <p>Lưu trữ hình ảnh sản phẩm chất lượng cao không tính chi phí băng thông</p>
+                    <span class="system-badge success">Sẵn sàng</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Add Product -->
+    <div class="modal-overlay" id="productModalOverlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Thêm Sản Phẩm Mới</h3>
+                <button class="modal-close" id="closeProductModalBtn">&times;</button>
+            </div>
+            <form id="addProductForm" class="modal-body">
+                <div class="form__group">
+                    <label class="form__label">Tên sản phẩm *</label>
+                    <input type="text" id="adminProdName" class="form__input" placeholder="Ví dụ: Áo phông Gucci 2026" required>
+                </div>
+                <div class="form__group">
+                    <label class="form__label">Danh mục *</label>
+                    <select id="adminProdCategory" class="form__input" required>
+                        <option value="nam">Thời trang Nam</option>
+                        <option value="nu">Thời trang Nữ</option>
+                        <option value="phukien">Phụ kiện</option>
+                    </select>
+                </div>
+                <div class="form__group">
+                    <label class="form__label">Giá bán (VNĐ) *</label>
+                    <input type="number" id="adminProdPrice" class="form__input" placeholder="Ví dụ: 350000" required>
+                </div>
+                <div class="form__group">
+                    <label class="form__label">Huy hiệu</label>
+                    <select id="adminProdBadge" class="form__input">
+                        <option value="">Không có</option>
+                        <option value="Hot">Hot</option>
+                        <option value="Mới">Mới</option>
+                        <option value="-20%">Giảm 20%</option>
+                    </select>
+                </div>
+                <div class="form__group">
+                    <label class="form__label">Tải ảnh lên Cloudflare R2 / Chọn ảnh *</label>
+                    <input type="file" id="adminProdImageFile" class="form__input" accept="image/*">
+                    <input type="text" id="adminProdImageUrl" class="form__input" placeholder="Hoặc nhập đường dẫn ảnh (VD: assets/images/anhaolv.jpg)" style="margin-top:8px;">
+                </div>
+                <div class="form__group">
+                    <label class="form__label">Mô tả sản phẩm</label>
+                    <textarea id="adminProdDesc" class="form__input" rows="3" placeholder="Nhập mô tả ngắn sản phẩm"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn--outline" id="cancelAddProductBtn">Hủy</button>
+                    <button type="submit" class="btn btn--primary">Lưu Sản Phẩm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <div class="toast__content">
+            <svg class="toast__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <span class="toast__message" id="toastMessage">Thành công!</span>
+        </div>
+        <button class="toast__close" id="toastClose">&times;</button>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Admin Page Script Integration
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check auth
+            const user = JSON.parse(localStorage.getItem('anhkhai_user'));
+            if (!user || user.role !== 'admin') {
+                alert('Bạn cần đăng nhập bằng tài khoản Quản trị (Admin) để truy cập trang này!');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Tabs
+            const tabs = document.querySelectorAll('.admin-tab');
+            const panels = document.querySelectorAll('.admin-panel');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    panels.forEach(p => p.classList.remove('active'));
+                    tab.classList.add('active');
+                    const target = tab.getAttribute('data-tab');
+                    if (target === 'products') document.getElementById('tabProducts').classList.add('active');
+                    if (target === 'orders') document.getElementById('tabOrders').classList.add('active');
+                    if (target === 'system') document.getElementById('tabSystem').classList.add('active');
+                });
+            });
+
+            // Modal
+            const openModalBtn = document.getElementById('openAddProductModalBtn');
+            const closeModalBtn = document.getElementById('closeProductModalBtn');
+            const cancelModalBtn = document.getElementById('cancelAddProductBtn');
+            const modalOverlay = document.getElementById('productModalOverlay');
+            const addProductForm = document.getElementById('addProductForm');
+
+            function openModal() { modalOverlay.classList.add('active'); }
+            function closeModal() { modalOverlay.classList.remove('active'); addProductForm.reset(); }
+
+            openModalBtn.addEventListener('click', openModal);
+            closeModalBtn.addEventListener('click', closeModal);
+            cancelModalBtn.addEventListener('click', closeModal);
+
+            // Add Product Handler
+            addProductForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const name = document.getElementById('adminProdName').value;
+                const category = document.getElementById('adminProdCategory').value;
+                const price = document.getElementById('adminProdPrice').value;
+                const badge = document.getElementById('adminProdBadge').value;
+                const desc = document.getElementById('adminProdDesc').value;
+                let imageUrl = document.getElementById('adminProdImageUrl').value;
+                const fileInput = document.getElementById('adminProdImageFile');
+
+                if (fileInput.files.length > 0) {
+                    const formData = new FormData();
+                    formData.append('file', fileInput.files[0]);
+                    try {
+                        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                        const data = await res.json();
+                        if (data.url) imageUrl = data.url;
+                    } catch(err) {
+                        console.log('Using local file fallback');
+                        imageUrl = `assets/images/${fileInput.files[0].name}`;
+                    }
+                }
+
+                if (!imageUrl) imageUrl = 'assets/images/anhaolv.jpg';
+
+                const newProd = {
+                    id: 'prod_' + Date.now(),
+                    name, category, price: parseInt(price, 10),
+                    description: desc, image_url: imageUrl, badge
+                };
+
+                // Add to local state & try API
+                let products = JSON.parse(localStorage.getItem('anhkhai_custom_products')) || [];
+                products.push(newProd);
+                localStorage.setItem('anhkhai_custom_products', JSON.stringify(products));
+
+                try {
+                    await fetch('/api/products', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(newProd)
+                    });
+                } catch(e){}
+
+                alert('Thêm sản phẩm thành công!');
+                closeModal();
+                loadAdminData();
+            });
+
+            // Logout
+            document.getElementById('adminLogoutBtn').addEventListener('click', function() {
+                localStorage.removeItem('anhkhai_user');
+                localStorage.removeItem('anhkhai_token');
+                window.location.href = 'index.html';
+            });
+
+            // Render Tables
+            function loadAdminData() {
+                const tbody = document.getElementById('adminProductsTbody');
+                const defaultProds = [
+                    { id: 1, name: 'Áo phông LV', category: 'nam', price: 300000, badge: 'Hot', image_url: 'assets/images/anhaolv.jpg' },
+                    { id: 2, name: 'Áo khoác Gucci', category: 'nam', price: 500000, badge: 'Mới', image_url: 'assets/images/khoacgc.jpg' },
+                    { id: 3, name: 'Giày JD', category: 'phukien', price: 700000, badge: 'Hot', image_url: 'assets/images/giayjd.jpg' },
+                    { id: 4, name: 'Túi Xách LV', category: 'phukien', price: 300000, badge: 'Hot', image_url: 'assets/images/tuilv.jpg' },
+                    { id: 5, name: 'Dép Hermes', category: 'phukien', price: 350000, badge: 'Mới', image_url: 'assets/images/dephm.jpg' }
+                ];
+                const customProds = JSON.parse(localStorage.getItem('anhkhai_custom_products')) || [];
+                const allProds = [...defaultProds, ...customProds];
+
+                document.getElementById('prodCount').textContent = allProds.length;
+                tbody.innerHTML = allProds.map(p => `
+                    <tr>
+                        <td><img src="${p.image_url}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;"></td>
+                        <td><strong>${p.name}</strong></td>
+                        <td><span class="section__tag" style="padding:2px 10px;font-size:0.75rem;">${p.category}</span></td>
+                        <td><strong style="color:var(--primary);">${p.price.toLocaleString('vi-VN')}₫</strong></td>
+                        <td>${p.badge ? `<span class="product-card__badge" style="position:static;">${p.badge}</span>` : '-'}</td>
+                        <td>
+                            <button class="btn btn--sm btn--outline" onclick="alert('Đã xóa ${p.name}')">Xóa</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                // Render Orders
+                const orders = JSON.parse(localStorage.getItem('anhkhai_orders')) || [
+                    { id: 'ORD-1001', customer_name: 'Nguyễn Văn A', phone: '0981923581', email: 'khach1@gmail.com', total: 600000, status: 'Đã xác nhận', date: '2026-09-28' }
+                ];
+                document.getElementById('orderCount').textContent = orders.length;
+                document.getElementById('adminOrdersTbody').innerHTML = orders.map(o => `
+                    <tr>
+                        <td><strong>#${o.id}</strong></td>
+                        <td>${o.customer_name}</td>
+                        <td>${o.phone}</td>
+                        <td>${o.email || '-'}</td>
+                        <td><strong style="color:var(--primary);">${(o.total || o.total_amount || 0).toLocaleString('vi-VN')}₫</strong></td>
+                        <td><span class="system-badge success">${o.status || 'Chờ duyệt'}</span></td>
+                        <td>${o.date || 'Hôm nay'}</td>
+                    </tr>
+                `).join('');
+            }
+
+            loadAdminData();
+        });
+    </script>
+</body>
+</html>

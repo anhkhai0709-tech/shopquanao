@@ -2,16 +2,16 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anh Khải Shop - Thời Trang Việt Nam | Xu Hướng Mới Nhất</title>
-    <meta name="description" content="Anh Khải Shop - Cửa hàng thời trang hàng đầu Việt Nam. Cập nhật xu hướng mới nhất, chất lượng cao, giá cả hợp lý.">
-    <meta name="keywords" content="thời trang, quần áo, mua sắm, thời trang nam nữ, Anh Khải Shop">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Anh Khải Shop - Thời Trang Việt Nam | Mobile First & Cloudflare</title>
+    <meta name="description" content="Anh Khải Shop - Cửa hàng thời trang cao cấp tích hợp Cloudflare Workers, D1 Database, R2 Bucket và Giỏ Hàng thông minh.">
+    <meta name="keywords" content="thời trang, quần áo, mua sắm, Anh Khải Shop, Cloudflare Workers, D1, R2">
     <meta name="author" content="Anh Khải Shop">
     <meta name="robots" content="index, follow">
 
     <!-- Open Graph -->
     <meta property="og:title" content="Anh Khải Shop - Thời Trang Việt Nam">
-    <meta property="og:description" content="Cửa hàng thời trang hàng đầu Việt Nam. Cập nhật xu hướng mới nhất.">
+    <meta property="og:description" content="Cửa hàng thời trang hiện đại tích hợp Cloudflare Workers & Giỏ Hàng.">
     <meta property="og:type" content="website">
     <meta property="og:locale" content="vi_VN">
 
@@ -53,6 +53,12 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                     <span class="cart-badge" id="cartBadgeCount">0</span>
                 </button>
+                
+                <!-- Auth Widget -->
+                <div id="authHeaderWidget">
+                    <button class="btn btn--outline btn--sm" id="openAuthModalBtn">Đăng nhập</button>
+                </div>
+
                 <a href="#contact" class="btn btn--primary header__cta">Liên hệ ngay</a>
             </div>
 
@@ -379,7 +385,7 @@
                 <div class="footer__social">
                     <h4 class="footer__heading">Theo dõi chúng tôi</h4>
                     <div class="footer__social-links">
-                        <a href="https://www.facebook.com/khai.than.98434" target="_blank" rel="noopener noreferrer" aria-label="Facebook" class="footer__social-link">
+                        <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook" class="footer__social-link">
                             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
                         </a>
                         <a href="https://github.com" target="_blank" rel="noopener noreferrer" aria-label="GitHub" class="footer__social-link">
@@ -433,6 +439,52 @@
             </div>
         </div>
     </aside>
+
+    <!-- ========== AUTH MODAL (ĐĂNG NHẬP / ĐĂNG KÝ) ========== -->
+    <div class="modal-overlay" id="authModalOverlay">
+        <div class="modal-box" style="max-width: 420px;">
+            <div class="modal-header">
+                <div class="auth-tabs" style="display:flex;gap:12px;">
+                    <button class="auth-tab active" id="tabLoginBtn" style="font-size:1.1rem;font-weight:700;border-bottom:2px solid var(--primary);padding-bottom:4px;">Đăng nhập</button>
+                    <button class="auth-tab" id="tabRegisterBtn" style="font-size:1.1rem;font-weight:700;color:var(--text-muted);padding-bottom:4px;">Đăng ký</button>
+                </div>
+                <button class="modal-close" id="closeAuthModalBtn">&times;</button>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="loginForm" class="modal-body">
+                <div class="form__group">
+                    <label class="form__label">Tên đăng nhập / Email *</label>
+                    <input type="text" id="loginUsername" class="form__input" placeholder="Nhập admin hoặc email" required>
+                </div>
+                <div class="form__group">
+                    <label class="form__label">Mật khẩu *</label>
+                    <input type="password" id="loginPassword" class="form__input" placeholder="Nhập mật khẩu (VD: admin123)" required>
+                </div>
+                <div style="font-size:0.8125rem;color:var(--text-muted);margin-bottom:12px;">
+                    💡 Đăng nhập thử Admin: <strong>admin</strong> / Mật khẩu: <strong>admin123</strong>
+                </div>
+                <button type="submit" class="btn btn--primary btn--full">Đăng Nhập</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" class="modal-body" style="display:none;">
+                <div class="form__group">
+                    <label class="form__label">Tên đăng nhập *</label>
+                    <input type="text" id="regUsername" class="form__input" placeholder="Tên tài khoản" required>
+                </div>
+                <div class="form__group">
+                    <label class="form__label">Email *</label>
+                    <input type="email" id="regEmail" class="form__input" placeholder="Email nhận thông tin" required>
+                </div>
+                <div class="form__group">
+                    <label class="form__label">Mật khẩu *</label>
+                    <input type="password" id="regPassword" class="form__input" placeholder="Tối thiểu 6 ký tự" required>
+                </div>
+                <button type="submit" class="btn btn--primary btn--full">Tạo Tài Khoản</button>
+            </form>
+        </div>
+    </div>
 
     <!-- Script -->
     <script src="script.js"></script>

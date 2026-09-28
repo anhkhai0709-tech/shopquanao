@@ -1,53 +1,100 @@
-# Anh Khải Shop - Website Thời Trang
+# Anh Khải Shop - Full-Stack E-Commerce (Cloudflare Pages + Workers + D1 + R2)
 
-Website thời trang hiện đại, responsive, tích hợp Giỏ hàng (Cart Drawer) hoàn chỉnh. Được xây dựng bằng HTML5, CSS3 và JavaScript thuần. Sẵn sàng deploy lên Cloudflare Pages.
+Hệ thống website thời trang hiện đại được xây dựng chuẩn **Mobile First**, tích hợp toàn bộ hệ sinh thái serverless của **Cloudflare**:
 
-## 📁 Cấu trúc project
+1. 📱 **Mobile First Architecture**: Giao diện tối ưu tuyệt đối trên điện thoại di động trước, tự động co giãn linh hoạt trên Tablet & Desktop.
+2. ⚡ **Cloudflare Workers Backend API**: Serverless API tự động mở rộng, xử lý Auth, CRUD Sản Phẩm, Đơn Hàng (`functions/api/[[path]].js`).
+3. 🖼️ **Cloudflare R2 Bucket**: Lưu trữ và phân phối hình ảnh sản phẩm không tốn chi phí băng thông (`MY_R2_BUCKET`).
+4. 🗄️ **Cloudflare D1 (SQLite)**: Cơ sở dữ liệu SQLite Serverless lưu trữ Người dùng, Sản phẩm và Đơn hàng (`functions/api/schema.sql`).
+5. 🔄 **Full-Stack Frontend / Backend**: Tách biệt rõ ràng API & Giao diện người dùng.
+6. 👤 **Hệ thống User & Admin (Phân quyền)**:
+   - **User**: Xem sản phẩm, tìm kiếm, lọc danh mục, thêm giỏ hàng, đặt hàng.
+   - **Admin**: Đăng nhập tài khoản Quản trị, truy cập Dashboard `admin.html`, thêm/sửa/xóa sản phẩm, tải ảnh lên R2, quản lý đơn hàng.
+
+---
+
+## 📁 Cấu trúc Project
 
 ```
 shopquanao/
 │
-├── index.html          # Trang chủ Anh Khải Shop
-├── style.css           # CSS styles & Cart Drawer
-├── script.js           # JavaScript logic & Cart Management
+├── index.html              # Frontend Trang chủ + Giỏ hàng + Modal Đăng Nhập / Đăng Ký
+├── admin.html              # Trang Dashboard Quản trị dành cho Admin (CRUD Sản phẩm, R2 Upload, Đơn hàng)
+├── style.css               # CSS Mobile First, Responsive, Toast, Modal, Admin Panel
+├── script.js               # Frontend JavaScript, Giỏ hàng LocalStorage, Workers API Integration
+├── wrangler.toml           # Cấu hình Cloudflare Pages, D1 Database & R2 Bucket Binding
+│
+├── functions/              # Backend Serverless Functions chạy trên Cloudflare Workers
+│   └── api/
+│       ├── [[path]].js     # Router xử lý API /api/auth, /api/products, /api/orders, /api/upload
+│       └── schema.sql      # Schema khởi tạo cơ sở dữ liệu D1 SQLite
+│
 ├── assets/
-│   ├── images/
-│   │   ├── anhaolv.jpg # Ảnh thật sản phẩm Áo phông LV
-│   │   └── .gitkeep
+│   ├── images/             # Lưu trữ hình ảnh sản phẩm (khoacgc.jpg, giayjd.jpg, tuilv.jpg...)
 │   └── icons/
-│       └── favicon.svg # Favicon
-└── README.md           # Hướng dẫn
+│       └── favicon.svg     # Favicon SVG
+└── README.md               # Hướng dẫn chi tiết
 ```
 
-## ✨ Tính năng nổi bật
+---
 
-- 🛒 **Giỏ hàng thông minh (Cart Drawer)**: Slide-over sidebar xem giỏ hàng real-time, tăng/giảm số lượng, tính tổng tiền tự động, lưu vào `localStorage`.
-- 🛍️ **Nút "+ Giỏ hàng" & "Mua ngay"**: Thao tác đặt hàng nhanh chóng trên từng sản phẩm.
-- 👕 **Sản phẩm Áo phông LV**: Sử dụng đường dẫn tương đối `assets/images/anhaolv.jpg` tương thích 100% với Cloudflare Pages.
-- 📞 **Thanh toán tự động**: Nhấn "Đặt hàng ngay" từ giỏ hàng sẽ tự động tổng hợp đơn hàng và điền vào Form Liên hệ.
+## 🔑 Tài khoản Đăng nhập Quản trị (Admin Demo)
 
-## 🚀 Chạy trên máy tính
+- **Tên đăng nhập**: `admin` (hoặc `admin@anhkhaishop.com`)
+- **Mật khẩu**: `admin123`
+- Khi đăng nhập bằng tài khoản Admin, trên Header sẽ xuất hiện nút **"Quản trị"** dẫn đến trang `admin.html`.
 
-### Cách 1: Mở trực tiếp
-Nhấp đúp vào file `index.html` để mở trong trình duyệt.
+---
 
-### Cách 2: Dùng Live Server (VS Code)
-1. Cài extension **Live Server** trong VS Code.
-2. Mở project trong VS Code.
-3. Nhấp chuột phải vào `index.html` → **Open with Live Server**.
+## ☁️ Hướng dẫn Khởi tạo D1 Database & R2 Bucket trên Cloudflare
 
-## 📤 Upload lên GitHub & Deploy Cloudflare Pages
+### Bước 1: Khởi tạo D1 Database (SQLite)
+Dùng Wrangler CLI trên terminal của bạn:
+```bash
+# Tạo cơ sở dữ liệu D1
+npx wrangler d1 create anhkhaishop-db
 
-1. Commit và push code lên GitHub:
+# Tạo bảng dữ liệu từ schema.sql
+npx wrangler d1 execute anhkhaishop-db --file=./functions/api/schema.sql
+```
+*(Sau đó copy `database_id` cập nhật vào file `wrangler.toml`)*.
+
+### Bước 2: Khởi tạo R2 Bucket (Lưu trữ ảnh)
+```bash
+# Tạo bucket lưu ảnh R2
+npx wrangler r2 bucket create anhkhaishop-images
+```
+
+---
+
+## 🚀 Deploy lên Cloudflare Pages
+
+### Cách 1: Kết nối GitHub (Tự động Deploy)
+1. Commit và Push toàn bộ project lên GitHub:
 ```bash
 git add .
-git commit -m "Cập nhật Anh Khải Shop & tính năng giỏ hàng"
+git commit -m "Nâng cấp Full-Stack Cloudflare Workers, D1, R2, Admin Dashboard & Auth"
 git push origin main
 ```
-2. Cloudflare Pages sẽ **tự động phát hiện thay đổi và deploy lại** chỉ trong vài giây!
+2. Vào Cloudflare Dashboard → **Workers & Pages** → **Create Application** → **Pages** → **Connect to Git**.
+3. Chọn repository → **Save and Deploy**.
+4. Vào cài đặt Pages → **Settings** → **Functions** → Gắn binding:
+   - **D1 Database binding**: Đặt tên `DB` → Chọn database `anhkhaishop-db`
+   - **R2 Bucket binding**: Đặt tên `MY_R2_BUCKET` → Chọn bucket `anhkhaishop-images`
 
-## 📱 Responsive
-Website hiển thị mượt mà trên Desktop, Laptop, Tablet và Mobile.
+### Cách 2: Deploy trực tiếp qua CLI
+```bash
+npx wrangler pages deploy . --project-name=anhkhaishop
+```
+
+---
+
+## 📱 Kiểm tra Responsive Mobile First
+- Mobile (375px - 414px): Giao diện 1 cột, menu hamburger, bộ lọc vuốt ngang, giỏ hàng trượt mượt mà.
+- Tablet (768px): Giao diện 2 cột.
+- Desktop (1024px+): Giao diện 3 cột full tính năng.
+
+---
 
 ## 📝 License
 © 2026 Anh Khải Shop. Tất cả quyền được bảo lưu.
