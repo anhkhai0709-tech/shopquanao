@@ -1,8 +1,18 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "shopquanao",
-  "compatibility_date": "2026-09-26",
-  "assets": {
-    "directory": "."
-  }
+  "name": "anhkhaishop",
+  "pages_build_output_dir": ".",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "anhkhaishop-db",
+      "database_id": "your-d1-database-id"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MY_R2_BUCKET",
+      "bucket_name": "anhkhaishop-images"
+    }
+  ]
 }
