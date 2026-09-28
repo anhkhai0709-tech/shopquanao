@@ -279,12 +279,7 @@
                 updateAuthHeaderUI();
             });
         } else {
-            authHeaderWidget.innerHTML = `
-                <div style="display:flex;align-items:center;gap:6px;">
-                    <a href="admin.html" class="btn btn--sm btn--primary">⚙️ Quản trị Admin</a>
-                    <button class="btn btn--outline btn--sm" id="openAuthModalBtn">Đăng nhập</button>
-                </div>
-            `;
+            authHeaderWidget.innerHTML = `<button class="btn btn--outline btn--sm" id="openAuthModalBtn">Đăng nhập / Đăng ký</button>`;
             const newOpenBtn = document.getElementById('openAuthModalBtn');
             if (newOpenBtn) newOpenBtn.addEventListener('click', openAuthModal);
         }
@@ -295,7 +290,19 @@
     }
 
     function closeAuthModal() {
+        const user = JSON.parse(localStorage.getItem('anhkhai_user'));
+        if (!user) {
+            showToast('🔒 Bạn phải Đăng ký hoặc Đăng nhập tài khoản để vào Cửa Hàng!');
+            return;
+        }
         if (authModalOverlay) authModalOverlay.classList.remove('active');
+    }
+
+    function checkMandatoryAuth() {
+        const user = JSON.parse(localStorage.getItem('anhkhai_user'));
+        if (!user) {
+            setTimeout(openAuthModal, 300);
+        }
     }
 
     if (openAuthModalBtn) openAuthModalBtn.addEventListener('click', openAuthModal);
@@ -340,7 +347,7 @@
                     localStorage.setItem('anhkhai_user', JSON.stringify(data.user));
                     localStorage.setItem('anhkhai_token', data.token);
                     showToast(`Xin chào ${data.user.username}! Đăng nhập thành công.`);
-                    closeAuthModal();
+                    if (authModalOverlay) authModalOverlay.classList.remove('active');
                     updateAuthHeaderUI();
                     if (data.user.role === 'admin') {
                         setTimeout(() => window.location.href = 'admin.html', 800);
@@ -351,20 +358,31 @@
                 console.log('Worker API offline, fallback to client auth');
             }
 
-            // Client-side Fallback Demo Auth
+            // Client-side Fallback Auth
             if ((username === 'anhkhaishop' || username === 'admin@anhkhaishop.com') && password === 'admin12345') {
                 const user = { id: 1, username: 'anhkhaishop', email: 'admin@anhkhaishop.com', role: 'admin' };
                 localStorage.setItem('anhkhai_user', JSON.stringify(user));
                 showToast('Đăng nhập thành công với quyền Admin!');
-                closeAuthModal();
+                if (authModalOverlay) authModalOverlay.classList.remove('active');
                 updateAuthHeaderUI();
                 setTimeout(() => window.location.href = 'admin.html', 800);
-            } else if (username && password) {
-                const user = { id: Date.now(), username: username, email: `${username}@gmail.com`, role: 'user' };
-                localStorage.setItem('anhkhai_user', JSON.stringify(user));
-                showToast(`Xin chào ${username}! Đăng nhập thành công.`);
-                closeAuthModal();
-                updateAuthHeaderUI();
+            } else {
+                let usersDb = JSON.parse(localStorage.getItem('anhkhai_users_db')) || [];
+                let match = usersDb.find(u => (u.username.toLowerCase() === username.toLowerCase() || u.email.toLowerCase() === username.toLowerCase()) && u.password === password);
+
+                if (match) {
+                    const user = { id: match.id, username: match.username, email: match.email, role: 'user' };
+                    localStorage.setItem('anhkhai_user', JSON.stringify(user));
+                    showToast(`Xin chào ${match.username}! Đăng nhập thành công.`);
+                    if (authModalOverlay) authModalOverlay.classList.remove('active');
+                    updateAuthHeaderUI();
+                } else {
+                    if (username.toLowerCase() === 'anhkhaishop' || username.toLowerCase() === 'admin') {
+                        showToast('❌ Mật khẩu Admin không đúng!');
+                    } else {
+                        showToast('❌ Tên đăng nhập hoặc mật khẩu chưa đúng! Vui lòng chọn tab Đăng Ký nếu chưa có tài khoản.');
+                    }
+                }
             }
         });
     }
@@ -377,26 +395,40 @@
             const email = document.getElementById('regEmail').value.trim();
             const password = document.getElementById('regPassword').value.trim();
 
+            if (username.toLowerCase() === 'anhkhaishop' || username.toLowerCase() === 'admin') {
+                showToast('⚠️ Tên tài khoản này được bảo lưu riêng cho Quản trị viên (Admin)!');
+                return;
+            }
+
+            let usersDb = JSON.parse(localStorage.getItem('anhkhai_users_db')) || [];
+            if (usersDb.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+                showToast('⚠️ Tên tài khoản này đã được đăng ký trước đó! Vui lòng Đăng Nhập hoặc chọn tên khác.');
+                tabLoginBtn.click();
+                document.getElementById('loginUsername').value = username;
+                return;
+            }
+
+            // Save user to local DB
+            usersDb.push({ id: Date.now(), username, email, password, role: 'user' });
+            localStorage.setItem('anhkhai_users_db', JSON.stringify(usersDb));
+
             try {
-                const res = await fetch('/api/auth/register', {
+                await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, email, password })
                 });
-                const data = await res.json();
-                if (res.ok) {
-                    showToast('Đăng ký thành công! Hãy đăng nhập.');
-                    tabLoginBtn.click();
-                    return;
-                }
             } catch(e){}
 
-            showToast('Tạo tài khoản mới thành công! Bạn có thể đăng nhập.');
+            showToast('🎉 Đăng ký tài khoản thành công! Nhấn "Đăng Nhập" để vào Cửa Hàng.');
             tabLoginBtn.click();
+            document.getElementById('loginUsername').value = username;
+            document.getElementById('loginPassword').value = password;
         });
     }
 
     updateAuthHeaderUI();
+    checkMandatoryAuth();
 
     // Render Admin Custom Products if added (with API & LocalStorage sync)
     async function renderCustomProducts() {
