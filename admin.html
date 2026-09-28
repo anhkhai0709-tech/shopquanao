@@ -35,7 +35,7 @@
         <div class="admin-header">
             <div>
                 <h2>Bảng Quản Trị Hệ Thống</h2>
-                <p>Quản lý Sản phẩm, Đơn hàng, Ảnh tải lên Cloudflare R2 và Cơ sở dữ liệu D1 SQLite</p>
+                <p>Quản lý Sản phẩm, Duyệt đơn hàng, Ảnh tải lên Cloudflare R2 và Cơ sở dữ liệu D1 SQLite</p>
             </div>
             <button class="btn btn--primary" id="openAddProductModalBtn">+ Thêm Sản Phẩm Mới</button>
         </div>
@@ -43,7 +43,7 @@
         <!-- Admin Tabs -->
         <div class="admin-tabs">
             <button class="admin-tab active" data-tab="products">Sản Phẩm (<span id="prodCount">0</span>)</button>
-            <button class="admin-tab" data-tab="orders">Đơn Hàng (<span id="orderCount">0</span>)</button>
+            <button class="admin-tab" data-tab="orders">Duyệt Đơn Hàng (<span id="orderCount">0</span>)</button>
             <button class="admin-tab" data-tab="system">Hệ Thống (Cloudflare Worker/D1/R2)</button>
         </div>
 
@@ -68,7 +68,7 @@
             </div>
         </div>
 
-        <!-- Tab 2: Orders List -->
+        <!-- Tab 2: Orders List (Duyệt Đơn Hàng) -->
         <div class="admin-panel" id="tabOrders">
             <div class="table-responsive">
                 <table class="admin-table">
@@ -77,10 +77,11 @@
                             <th>Mã Đơn</th>
                             <th>Khách Hàng</th>
                             <th>Số Điện Thoại</th>
-                            <th>Email</th>
+                            <th>Email / Nội dung</th>
                             <th>Tổng Tiền</th>
                             <th>Trạng Thái</th>
                             <th>Ngày Đặt</th>
+                            <th>Xử Lý Duyệt Đơn</th>
                         </tr>
                     </thead>
                     <tbody id="adminOrdersTbody">
@@ -224,7 +225,7 @@
             closeModalBtn.addEventListener('click', closeModal);
             cancelModalBtn.addEventListener('click', closeModal);
 
-            // Handle Image File Selection & Preview (FileReader Base64)
+            // Handle Image File Selection & Preview
             fileInput.addEventListener('change', function() {
                 if (fileInput.files.length > 0) {
                     const reader = new FileReader();
@@ -253,7 +254,6 @@
                 const desc = document.getElementById('adminProdDesc').value.trim();
                 let imageUrl = urlInput.value.trim();
 
-                // Convert file to Base64 Data URL if uploaded
                 if (fileInput.files.length > 0) {
                     try {
                         const formData = new FormData();
@@ -281,20 +281,14 @@
 
                 const newProd = {
                     id: 'prod_' + Date.now(),
-                    name, 
-                    category, 
-                    price: parseInt(price, 10),
-                    description: desc, 
-                    image_url: imageUrl, 
-                    badge
+                    name, category, price: parseInt(price, 10),
+                    description: desc, image_url: imageUrl, badge
                 };
 
-                // Save to localStorage so it renders on index.html immediately!
                 let customProducts = JSON.parse(localStorage.getItem('anhkhai_custom_products')) || [];
                 customProducts.push(newProd);
                 localStorage.setItem('anhkhai_custom_products', JSON.stringify(customProducts));
 
-                // Send to Workers API
                 try {
                     await fetch('/api/products', {
                         method: 'POST',
@@ -323,6 +317,44 @@
                     localStorage.setItem('anhkhai_custom_products', JSON.stringify(customProducts));
                     loadAdminData();
                 }
+            };
+
+            // Update Order Status (Duyệt Đơn / Giao hàng / Hủy đơn)
+            window.updateOrderStatus = async function(orderId, newStatus) {
+                let orders = JSON.parse(localStorage.getItem('anhkhai_orders')) || [];
+                let orderUpdated = false;
+
+                orders = orders.map(o => {
+                    if (String(o.id) === String(orderId)) {
+                        orderUpdated = true;
+                        return { ...o, status: newStatus };
+                    }
+                    return o;
+                });
+
+                if (!orderUpdated) {
+                    orders.push({
+                        id: orderId,
+                        customer_name: 'Khách hàng',
+                        phone: '0900000000',
+                        total: 0,
+                        status: newStatus,
+                        date: new Date().toISOString().split('T')[0]
+                    });
+                }
+
+                localStorage.setItem('anhkhai_orders', JSON.stringify(orders));
+
+                try {
+                    await fetch('/api/orders', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ order_id: orderId, status: newStatus })
+                    });
+                } catch(e){}
+
+                alert(`Đã cập nhật trạng thái đơn #${orderId} thành "${newStatus}"!`);
+                loadAdminData();
             };
 
             // Render Tables
@@ -354,22 +386,37 @@
                     </tr>
                 `).join('');
 
-                // Render Orders
+                // Render Orders Table with Status Approval Actions
                 const orders = JSON.parse(localStorage.getItem('anhkhai_orders')) || [
-                    { id: 'ORD-1001', customer_name: 'Nguyễn Văn A', phone: '0981923581', email: 'khach1@gmail.com', total: 600000, status: 'Đã xác nhận', date: '2026-09-28' }
+                    { id: 'ORD-1001', customer_name: 'Nguyễn Văn A', phone: '0981923581', email: 'khach1@gmail.com', total: 600000, status: 'Chờ duyệt', date: '2026-09-28' }
                 ];
+
                 document.getElementById('orderCount').textContent = orders.length;
-                document.getElementById('adminOrdersTbody').innerHTML = orders.map(o => `
-                    <tr>
-                        <td><strong>#${o.id}</strong></td>
-                        <td>${o.customer_name}</td>
-                        <td>${o.phone}</td>
-                        <td>${o.email || '-'}</td>
-                        <td><strong style="color:var(--primary);">${(o.total || o.total_amount || 0).toLocaleString('vi-VN')}₫</strong></td>
-                        <td><span class="system-badge success">${o.status || 'Chờ duyệt'}</span></td>
-                        <td>${o.date || 'Hôm nay'}</td>
-                    </tr>
-                `).join('');
+                document.getElementById('adminOrdersTbody').innerHTML = orders.map(o => {
+                    const statusClass = 
+                        o.status === 'Đã duyệt' ? 'success' :
+                        o.status === 'Đang giao' ? 'primary' :
+                        o.status === 'Đã hủy' ? 'error' : 'warning';
+
+                    return `
+                        <tr>
+                            <td><strong>#${o.id}</strong></td>
+                            <td>${o.customer_name}</td>
+                            <td>${o.phone}</td>
+                            <td><small style="color:var(--text-secondary);">${o.email || o.notes || '-'}</small></td>
+                            <td><strong style="color:var(--primary);">${(o.total || o.total_amount || 0).toLocaleString('vi-VN')}₫</strong></td>
+                            <td><span class="system-badge ${statusClass}">${o.status || 'Chờ duyệt'}</span></td>
+                            <td>${o.date || 'Hôm nay'}</td>
+                            <td>
+                                <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                                    <button class="btn btn--sm btn--primary" style="padding:3px 8px;font-size:0.75rem;" onclick="updateOrderStatus('${o.id}', 'Đã duyệt')">Duyệt đơn</button>
+                                    <button class="btn btn--sm btn--outline" style="padding:3px 8px;font-size:0.75rem;" onclick="updateOrderStatus('${o.id}', 'Đang giao')">Giao hàng</button>
+                                    <button class="btn btn--sm btn--outline" style="padding:3px 8px;font-size:0.75rem;color:var(--error);border-color:var(--error);" onclick="updateOrderStatus('${o.id}', 'Đã hủy')">Hủy</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
             }
 
             loadAdminData();

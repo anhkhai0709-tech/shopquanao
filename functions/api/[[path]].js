@@ -125,7 +125,7 @@ export async function onRequest(context) {
 
         // ===== ORDERS ENDPOINTS =====
 
-        // POST /api/orders
+        // POST /api/orders (Create order)
         if (path === '/orders' && method === 'POST') {
             const body = await request.json();
             const { customer_name, customer_email, customer_phone, items, total_amount, notes } = body;
@@ -137,7 +137,7 @@ export async function onRequest(context) {
             let orderId = Date.now();
             if (env.DB) {
                 const orderResult = await env.DB.prepare('INSERT INTO orders (customer_name, customer_email, customer_phone, total_amount, notes, status) VALUES (?, ?, ?, ?, ?, ?)')
-                    .bind(customer_name, customer_email || '', customer_phone, total_amount, notes || '', 'pending')
+                    .bind(customer_name, customer_email || '', customer_phone, total_amount, notes || '', 'Chờ duyệt')
                     .run();
                 
                 orderId = orderResult.meta.last_row_id;
@@ -162,6 +162,20 @@ export async function onRequest(context) {
             return new Response(JSON.stringify({ orders }), { status: 200, headers: corsHeaders });
         }
 
+        // PUT /api/orders (Update Order Status - Admin)
+        if (path === '/orders' && method === 'PUT') {
+            const body = await request.json();
+            const { order_id, status } = body;
+
+            if (env.DB && order_id && status) {
+                await env.DB.prepare('UPDATE orders SET status = ? WHERE id = ?')
+                    .bind(status, order_id)
+                    .run();
+            }
+
+            return new Response(JSON.stringify({ message: 'Cập nhật trạng thái đơn hàng thành công!' }), { status: 200, headers: corsHeaders });
+        }
+
         // ===== CLOUDFLARE R2 IMAGE UPLOAD =====
 
         // POST /api/upload (Upload image to Cloudflare R2 Bucket)
@@ -182,7 +196,6 @@ export async function onRequest(context) {
                 const imageUrl = `/api/images/${fileName}`;
                 return new Response(JSON.stringify({ message: 'Tải ảnh lên R2 thành công!', url: imageUrl }), { status: 200, headers: corsHeaders });
             } else {
-                // Return local preview data URL if R2 bucket is not yet bound
                 return new Response(JSON.stringify({
                     message: 'Chưa gắn R2 Bucket (dùng ảnh local demo)',
                     url: `assets/images/${file.name}`

@@ -52,6 +52,17 @@
         return parseInt(price, 10).toLocaleString('vi-VN') + '₫';
     }
 
+    // Helper: Require Login to Purchase
+    function checkAuthForPurchase() {
+        const user = JSON.parse(localStorage.getItem('anhkhai_user'));
+        if (!user) {
+            showToast('⚠️ Vui lòng đăng nhập tài khoản để mua hàng!');
+            openAuthModal();
+            return false;
+        }
+        return true;
+    }
+
     function updateCartUI() {
         let totalCount = 0;
         let totalPrice = 0;
@@ -159,6 +170,8 @@
 
     // Add to Cart Function
     function addToCart(product, openDrawer = false) {
+        if (!checkAuthForPurchase()) return;
+
         const existingIndex = cart.findIndex(item => item.id === product.id);
         if (existingIndex > -1) {
             cart[existingIndex].quantity += 1;
@@ -190,6 +203,8 @@
             };
             addToCart(product, false);
         } else if (buyBtn) {
+            if (!checkAuthForPurchase()) return;
+
             const product = {
                 id: buyBtn.getAttribute('data-id'),
                 name: buyBtn.getAttribute('data-name'),
@@ -223,6 +238,8 @@
 
     if (checkoutBtn) {
         checkoutBtn.addEventListener('click', function () {
+            if (!checkAuthForPurchase()) return;
+
             if (cart.length === 0) {
                 showToast('Giỏ hàng trống! Hãy thêm sản phẩm trước.');
                 return;
@@ -307,7 +324,6 @@
             const password = document.getElementById('loginPassword').value.trim();
 
             try {
-                // Try backend API first
                 const res = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -548,6 +564,9 @@
     if (contactForm) {
         contactForm.addEventListener('submit', async function (e) {
             e.preventDefault();
+
+            if (!checkAuthForPurchase()) return;
+
             const fullName = document.getElementById('fullName').value.trim();
             const email = document.getElementById('email').value.trim();
             const phone = document.getElementById('phone').value.trim();
@@ -558,15 +577,30 @@
                 return;
             }
 
+            const orderId = 'ORD-' + Math.floor(1000 + Math.random() * 9000);
+            const totalAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
             const orderData = {
+                id: orderId,
                 customer_name: fullName,
                 customer_email: email,
                 customer_phone: phone,
+                phone: phone,
+                email: email,
                 notes: notes,
                 items: cart,
-                total_amount: cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+                total: totalAmount,
+                total_amount: totalAmount,
+                status: 'Chờ duyệt',
+                date: new Date().toISOString().split('T')[0]
             };
 
+            // Save to local orders list for Admin to approve
+            let orders = JSON.parse(localStorage.getItem('anhkhai_orders')) || [];
+            orders.unshift(orderData);
+            localStorage.setItem('anhkhai_orders', JSON.stringify(orders));
+
+            // Send to Worker API if available
             try {
                 await fetch('/api/orders', {
                     method: 'POST',
@@ -575,20 +609,7 @@
                 });
             } catch(e){}
 
-            // Save to local orders list for admin review
-            let orders = JSON.parse(localStorage.getItem('anhkhai_orders')) || [];
-            orders.push({
-                id: 'ORD-' + Math.floor(1000 + Math.random() * 9000),
-                customer_name: fullName,
-                phone: phone,
-                email: email,
-                total: orderData.total_amount,
-                status: 'Chờ duyệt',
-                date: new Date().toISOString().split('T')[0]
-            });
-            localStorage.setItem('anhkhai_orders', JSON.stringify(orders));
-
-            showToast('Đặt hàng thành công! Anh Khải Shop sẽ liên hệ xác nhận.');
+            showToast(`🎉 Đặt hàng thành công (Mã đơn #${orderId})! Đơn hàng đang chờ Admin duyệt.`);
             contactForm.reset();
             cart = [];
             saveCart();
