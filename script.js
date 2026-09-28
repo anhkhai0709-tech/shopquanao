@@ -279,7 +279,12 @@
                 updateAuthHeaderUI();
             });
         } else {
-            authHeaderWidget.innerHTML = `<button class="btn btn--outline btn--sm" id="openAuthModalBtn">Đăng nhập</button>`;
+            authHeaderWidget.innerHTML = `
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <a href="admin.html" class="btn btn--sm btn--primary">⚙️ Quản trị Admin</a>
+                    <button class="btn btn--outline btn--sm" id="openAuthModalBtn">Đăng nhập</button>
+                </div>
+            `;
             const newOpenBtn = document.getElementById('openAuthModalBtn');
             if (newOpenBtn) newOpenBtn.addEventListener('click', openAuthModal);
         }
