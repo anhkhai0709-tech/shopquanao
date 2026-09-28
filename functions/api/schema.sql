@@ -49,9 +49,9 @@ CREATE TABLE IF NOT EXISTS order_items (
     FOREIGN KEY(order_id) REFERENCES orders(id) ON DELETE CASCADE
 );
 
--- Default Admin User (Password: admin123 - pre-hashed SHA-256 for demo)
+-- Default Admin User (Username: anhkhaishop, Password: admin12345 - SHA-256 hash)
 INSERT OR IGNORE INTO users (id, username, email, password_hash, role)
-VALUES (1, 'admin', 'admin@anhkhaishop.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'admin');
+VALUES (1, 'anhkhaishop', 'admin@anhkhaishop.com', '41e5653fc7aeb894026d6bb7b2db7f65902b454945fa8fd65a6327047b5277fb', 'admin');
 
 -- Sample Initial Products
 INSERT OR IGNORE INTO products (id, name, category, price, description, image_url, badge) VALUES

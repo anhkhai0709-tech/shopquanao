@@ -64,8 +64,8 @@ export async function onRequest(context) {
                     .first();
             } else {
                 // Hardcoded fallback for demo/testing without D1 bound
-                if ((username === 'admin' || username === 'admin@anhkhaishop.com') && password === 'admin123') {
-                    user = { id: 1, username: 'admin', email: 'admin@anhkhaishop.com', role: 'admin' };
+                if ((username === 'anhkhaishop' || username === 'admin@anhkhaishop.com') && password === 'admin12345') {
+                    user = { id: 1, username: 'anhkhaishop', email: 'admin@anhkhaishop.com', role: 'admin' };
                 } else if (username && password) {
                     user = { id: 2, username: username, email: `${username}@gmail.com`, role: 'user' };
                 }
@@ -128,16 +128,17 @@ export async function onRequest(context) {
         // POST /api/orders (Create order)
         if (path === '/orders' && method === 'POST') {
             const body = await request.json();
-            const { customer_name, customer_email, customer_phone, items, total_amount, notes } = body;
+            const { customer_name, customer_email, customer_phone, shipping_address, address, items, total_amount, notes } = body;
+            const finalAddress = shipping_address || address || '';
 
-            if (!customer_name || !customer_phone || !items) {
-                return new Response(JSON.stringify({ error: 'Vui lòng cung cấp đầy đủ thông tin đơn hàng' }), { status: 400, headers: corsHeaders });
+            if (!customer_name || !customer_phone || !finalAddress || !items) {
+                return new Response(JSON.stringify({ error: 'Vui lòng cung cấp đầy đủ họ tên, SĐT và địa chỉ giao hàng' }), { status: 400, headers: corsHeaders });
             }
 
             let orderId = Date.now();
             if (env.DB) {
-                const orderResult = await env.DB.prepare('INSERT INTO orders (customer_name, customer_email, customer_phone, total_amount, notes, status) VALUES (?, ?, ?, ?, ?, ?)')
-                    .bind(customer_name, customer_email || '', customer_phone, total_amount, notes || '', 'Chờ duyệt')
+                const orderResult = await env.DB.prepare('INSERT INTO orders (customer_name, customer_email, customer_phone, shipping_address, total_amount, notes, status) VALUES (?, ?, ?, ?, ?, ?, ?)')
+                    .bind(customer_name, customer_email || '', customer_phone, finalAddress, total_amount, notes || '', 'Chờ duyệt')
                     .run();
                 
                 orderId = orderResult.meta.last_row_id;

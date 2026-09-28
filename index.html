@@ -327,18 +327,23 @@
                         <span class="form__error" id="fullNameError"></span>
                     </div>
                     <div class="form__group">
-                        <label for="email" class="form__label">Email <span class="required">*</span></label>
-                        <input type="email" id="email" name="email" class="form__input" placeholder="Nhập email" required>
-                        <span class="form__error" id="emailError"></span>
-                    </div>
-                    <div class="form__group">
                         <label for="phone" class="form__label">Số điện thoại <span class="required">*</span></label>
                         <input type="tel" id="phone" name="phone" class="form__input" placeholder="Nhập số điện thoại" required>
                         <span class="form__error" id="phoneError"></span>
                     </div>
                     <div class="form__group">
-                        <label for="message" class="form__label">Nội dung / Đơn hàng <span class="required">*</span></label>
-                        <textarea id="message" name="message" class="form__input form__textarea" placeholder="Nhập ghi chú đơn hàng hoặc câu hỏi của bạn" rows="5" required></textarea>
+                        <label for="address" class="form__label">Địa chỉ giao hàng <span class="required">*</span></label>
+                        <input type="text" id="address" name="address" class="form__input" placeholder="Nhập địa chỉ nhận hàng (Số nhà, đường, xã/phường, tỉnh/thành)" required>
+                        <span class="form__error" id="addressError"></span>
+                    </div>
+                    <div class="form__group">
+                        <label for="email" class="form__label">Email (Không bắt buộc)</label>
+                        <input type="email" id="email" name="email" class="form__input" placeholder="Nhập email">
+                        <span class="form__error" id="emailError"></span>
+                    </div>
+                    <div class="form__group">
+                        <label for="message" class="form__label">Nội dung / Ghi chú đơn hàng</label>
+                        <textarea id="message" name="message" class="form__input form__textarea" placeholder="Nhập ghi chú đơn hàng hoặc câu hỏi của bạn" rows="4"></textarea>
                         <span class="form__error" id="messageError"></span>
                     </div>
                     <button type="submit" class="btn btn--primary btn--lg btn--full">Gửi đơn hàng / Liên hệ</button>
@@ -462,7 +467,7 @@
                     <input type="password" id="loginPassword" class="form__input" placeholder="Nhập mật khẩu (VD: admin123)" required>
                 </div>
                 <div style="font-size:0.8125rem;color:var(--text-muted);margin-bottom:12px;">
-                    💡 Đăng nhập thử Admin: <strong>admin</strong> / Mật khẩu: <strong>admin123</strong>
+                    💡 Đăng nhập thử Admin: <strong>anhkhaishop</strong> / Mật khẩu: <strong>admin12345</strong>
                 </div>
                 <button type="submit" class="btn btn--primary btn--full">Đăng Nhập</button>
             </form>

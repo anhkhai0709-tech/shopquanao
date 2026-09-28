@@ -347,8 +347,8 @@
             }
 
             // Client-side Fallback Demo Auth
-            if ((username === 'admin' || username === 'admin@anhkhaishop.com') && password === 'admin123') {
-                const user = { id: 1, username: 'Admin', email: 'admin@anhkhaishop.com', role: 'admin' };
+            if ((username === 'anhkhaishop' || username === 'admin@anhkhaishop.com') && password === 'admin12345') {
+                const user = { id: 1, username: 'anhkhaishop', email: 'admin@anhkhaishop.com', role: 'admin' };
                 localStorage.setItem('anhkhai_user', JSON.stringify(user));
                 showToast('Đăng nhập thành công với quyền Admin!');
                 closeAuthModal();
@@ -393,10 +393,26 @@
 
     updateAuthHeaderUI();
 
-    // Render Admin Custom Products if added
-    function renderCustomProducts() {
+    // Render Admin Custom Products if added (with API & LocalStorage sync)
+    async function renderCustomProducts() {
         if (!productsGrid) return;
-        const customProds = JSON.parse(localStorage.getItem('anhkhai_custom_products')) || [];
+        let customProds = JSON.parse(localStorage.getItem('anhkhai_custom_products')) || [];
+
+        try {
+            const res = await fetch('/api/products');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.products && Array.isArray(data.products) && data.products.length > 0) {
+                    data.products.forEach(apiProd => {
+                        if (!customProds.some(p => String(p.id) === String(apiProd.id))) {
+                            customProds.unshift(apiProd);
+                        }
+                    });
+                    localStorage.setItem('anhkhai_custom_products', JSON.stringify(customProds));
+                }
+            }
+        } catch(e){}
+
         customProds.forEach(prod => {
             if (document.querySelector(`[data-id="${prod.id}"]`)) return;
             const article = document.createElement('article');
@@ -568,12 +584,14 @@
             if (!checkAuthForPurchase()) return;
 
             const fullName = document.getElementById('fullName').value.trim();
-            const email = document.getElementById('email').value.trim();
             const phone = document.getElementById('phone').value.trim();
+            const addressEl = document.getElementById('address');
+            const address = addressEl ? addressEl.value.trim() : '';
+            const email = document.getElementById('email').value.trim();
             const notes = document.getElementById('message').value.trim();
 
-            if (!fullName || !phone) {
-                showToast('Vui lòng điền họ tên và số điện thoại!');
+            if (!fullName || !phone || !address) {
+                showToast('Vui lòng điền đầy đủ Họ và tên, Số điện thoại và Địa chỉ giao hàng!');
                 return;
             }
 
@@ -587,6 +605,8 @@
                 customer_phone: phone,
                 phone: phone,
                 email: email,
+                address: address,
+                shipping_address: address,
                 notes: notes,
                 items: cart,
                 total: totalAmount,
