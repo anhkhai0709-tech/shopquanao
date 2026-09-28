@@ -55,8 +55,12 @@ VALUES (1, 'anhkhaishop', 'admin@anhkhaishop.com', '41e5653fc7aeb894026d6bb7b2db
 
 -- Sample Initial Products
 INSERT OR IGNORE INTO products (id, name, category, price, description, image_url, badge) VALUES
-(1, 'Áo phông LV', 'nam', 300000, 'Hàng mới về cực chất cho anh em, chất liệu cotton cao cấp thoáng mát.', 'assets/images/anhaolv.jpg', 'Hot'),
-(2, 'Áo khoác Gucci', 'nam', 500000, 'Phong cách cao cấp, kiểu dáng thời thượng không có gì để chê.', 'assets/images/khoacgc.jpg', 'Mới'),
-(3, 'Giày JD', 'phukien', 700000, 'Thiết kế thời thượng, chất liệu cao cấp, phối đồ cực ngầu.', 'assets/images/giayjd.jpg', 'Hot'),
-(4, 'Túi Xách LV', 'phukien', 300000, 'Thiết kế sang trọng, ngăn chứa rộng rãi, phù hợp mọi outfit.', 'assets/images/tuilv.jpg', 'Hot'),
-(5, 'Dép Hermes', 'phukien', 350000, 'Chất liệu da êm ái, kiểu dáng quai chữ H sang trọng và lịch sự.', 'assets/images/dephm.jpg', 'Mới');
+(1, 'áo hoàng gia', 'nam', 120000, 'Phong cách hoàng gia sang trọng, chất liệu vải mềm mại thoáng mát.', 'assets/images/aohoanggia.jpg', 'Hot'),
+(2, 'áo chó', 'nu', 199999, 'Thời trang nữ chất liệu cao cấp, kiểu dáng thời thượng cá tính.', 'assets/images/aochonu.jpg', 'Mới'),
+(3, 'Váy new', 'nu', 499999, 'Váy nữ thiết kế ren lộng lẫy quyến rũ, kiểu dáng tôn dáng quyến rũ.', 'assets/images/vay.jpg', 'Hot'),
+(4, 'phông micky', 'nu', 199999, 'Áo phông micky nữ dễ thương, vải cotton mềm mịn thoáng mát.', 'assets/images/aogaunu.jpg', 'Hot'),
+(5, 'Áo phông LV', 'nam', 300000, 'Hàng mới về cực chất cho anh em, chất liệu cotton cao cấp thoáng mát.', 'assets/images/anhaolv.jpg', 'Hot'),
+(6, 'Áo khoác Gucci', 'nam', 500000, 'Phong cách cao cấp, kiểu dáng thời thượng không có gì để chê.', 'assets/images/khoacgc.jpg', 'Mới'),
+(7, 'Giày JD', 'phukien', 700000, 'Thiết kế thời thượng, chất liệu cao cấp, phối đồ cực ngầu.', 'assets/images/giayjd.jpg', 'Hot'),
+(8, 'Túi Xách LV', 'phukien', 300000, 'Thiết kế sang trọng, ngăn chứa rộng rãi, phù hợp mọi outfit.', 'assets/images/tuilv.jpg', 'Hot'),
+(9, 'Dép Hermes', 'phukien', 350000, 'Chất liệu da êm ái, kiểu dáng quai chữ H sang trọng và lịch sự.', 'assets/images/dephm.jpg', 'Mới');

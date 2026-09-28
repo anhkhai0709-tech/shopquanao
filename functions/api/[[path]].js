@@ -1,7 +1,12 @@
 // Cloudflare Pages Functions / Workers Backend API Router
 // Handles Auth (Login/Register), Products (CRUD), Orders, and R2 Image Uploads
 
-let globalCustomProducts = [];
+let globalCustomProducts = [
+    { id: 'def_101', name: 'áo hoàng gia', category: 'nam', price: 120000, description: 'Phong cách hoàng gia sang trọng, chất liệu vải mềm mại thoáng mát.', image_url: 'assets/images/aohoanggia.jpg', badge: 'Hot' },
+    { id: 'def_102', name: 'áo chó', category: 'nu', price: 199999, description: 'Thời trang nữ chất liệu cao cấp, kiểu dáng thời thượng cá tính.', image_url: 'assets/images/aochonu.jpg', badge: 'Mới' },
+    { id: 'def_103', name: 'Váy new', category: 'nu', price: 499999, description: 'Váy nữ thiết kế ren lộng lẫy quyến rũ, kiểu dáng tôn dáng quyến rũ.', image_url: 'assets/images/vay.jpg', badge: 'Hot' },
+    { id: 'def_104', name: 'phông micky', category: 'nu', price: 199999, description: 'Áo phông micky nữ dễ thương, vải cotton mềm mịn thoáng mát.', image_url: 'assets/images/aogaunu.jpg', badge: 'Hot' }
+];
 let globalOrders = [];
 
 export async function onRequest(context) {
