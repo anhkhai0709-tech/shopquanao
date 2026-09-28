@@ -149,9 +149,10 @@
                     </select>
                 </div>
                 <div class="form__group">
-                    <label class="form__label">Tải ảnh lên Cloudflare R2 / Chọn ảnh *</label>
+                    <label class="form__label">Chọn ảnh từ máy tính / Tải ảnh lên *</label>
                     <input type="file" id="adminProdImageFile" class="form__input" accept="image/*">
-                    <input type="text" id="adminProdImageUrl" class="form__input" placeholder="Hoặc nhập đường dẫn ảnh (VD: assets/images/anhaolv.jpg)" style="margin-top:8px;">
+                    <input type="text" id="adminProdImageUrl" class="form__input" placeholder="Hoặc nhập đường dẫn/link ảnh (VD: assets/images/anhaolv.jpg)" style="margin-top:8px;">
+                    <img id="adminProdImgPreview" style="display:none;width:100%;height:140px;object-fit:cover;border-radius:8px;margin-top:8px;border:1px solid var(--border);" alt="Preview">
                 </div>
                 <div class="form__group">
                     <label class="form__label">Mô tả sản phẩm</label>
@@ -201,41 +202,78 @@
                 });
             });
 
-            // Modal
+            // Modal & File Preview
             const openModalBtn = document.getElementById('openAddProductModalBtn');
             const closeModalBtn = document.getElementById('closeProductModalBtn');
             const cancelModalBtn = document.getElementById('cancelAddProductBtn');
             const modalOverlay = document.getElementById('productModalOverlay');
             const addProductForm = document.getElementById('addProductForm');
+            const fileInput = document.getElementById('adminProdImageFile');
+            const urlInput = document.getElementById('adminProdImageUrl');
+            const imgPreview = document.getElementById('adminProdImgPreview');
 
             function openModal() { modalOverlay.classList.add('active'); }
-            function closeModal() { modalOverlay.classList.remove('active'); addProductForm.reset(); }
+            function closeModal() { 
+                modalOverlay.classList.remove('active'); 
+                addProductForm.reset(); 
+                imgPreview.style.display = 'none';
+                imgPreview.src = '';
+            }
 
             openModalBtn.addEventListener('click', openModal);
             closeModalBtn.addEventListener('click', closeModal);
             cancelModalBtn.addEventListener('click', closeModal);
 
+            // Handle Image File Selection & Preview (FileReader Base64)
+            fileInput.addEventListener('change', function() {
+                if (fileInput.files.length > 0) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imgPreview.src = e.target.result;
+                        imgPreview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(fileInput.files[0]);
+                }
+            });
+
+            urlInput.addEventListener('input', function() {
+                if (urlInput.value.trim()) {
+                    imgPreview.src = urlInput.value.trim();
+                    imgPreview.style.display = 'block';
+                }
+            });
+
             // Add Product Handler
             addProductForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
-                const name = document.getElementById('adminProdName').value;
+                const name = document.getElementById('adminProdName').value.trim();
                 const category = document.getElementById('adminProdCategory').value;
                 const price = document.getElementById('adminProdPrice').value;
                 const badge = document.getElementById('adminProdBadge').value;
-                const desc = document.getElementById('adminProdDesc').value;
-                let imageUrl = document.getElementById('adminProdImageUrl').value;
-                const fileInput = document.getElementById('adminProdImageFile');
+                const desc = document.getElementById('adminProdDesc').value.trim();
+                let imageUrl = urlInput.value.trim();
 
+                // Convert file to Base64 Data URL if uploaded
                 if (fileInput.files.length > 0) {
-                    const formData = new FormData();
-                    formData.append('file', fileInput.files[0]);
                     try {
+                        const formData = new FormData();
+                        formData.append('file', fileInput.files[0]);
                         const res = await fetch('/api/upload', { method: 'POST', body: formData });
                         const data = await res.json();
                         if (data.url) imageUrl = data.url;
                     } catch(err) {
-                        console.log('Using local file fallback');
-                        imageUrl = `assets/images/${fileInput.files[0].name}`;
+                        console.log('Worker API offline, using Base64 Data URL');
+                    }
+
+                    if (!imageUrl || imageUrl.startsWith('assets/images/')) {
+                        const readAsBase64 = (file) => new Promise((resolve) => {
+                            const reader = new FileReader();
+                            reader.onload = () => resolve(reader.result);
+                            reader.onerror = () => resolve(null);
+                            reader.readAsDataURL(file);
+                        });
+                        const base64 = await readAsBase64(fileInput.files[0]);
+                        if (base64) imageUrl = base64;
                     }
                 }
 
@@ -243,15 +281,20 @@
 
                 const newProd = {
                     id: 'prod_' + Date.now(),
-                    name, category, price: parseInt(price, 10),
-                    description: desc, image_url: imageUrl, badge
+                    name, 
+                    category, 
+                    price: parseInt(price, 10),
+                    description: desc, 
+                    image_url: imageUrl, 
+                    badge
                 };
 
-                // Add to local state & try API
-                let products = JSON.parse(localStorage.getItem('anhkhai_custom_products')) || [];
-                products.push(newProd);
-                localStorage.setItem('anhkhai_custom_products', JSON.stringify(products));
+                // Save to localStorage so it renders on index.html immediately!
+                let customProducts = JSON.parse(localStorage.getItem('anhkhai_custom_products')) || [];
+                customProducts.push(newProd);
+                localStorage.setItem('anhkhai_custom_products', JSON.stringify(customProducts));
 
+                // Send to Workers API
                 try {
                     await fetch('/api/products', {
                         method: 'POST',
@@ -260,7 +303,7 @@
                     });
                 } catch(e){}
 
-                alert('Thêm sản phẩm thành công!');
+                alert('Thêm sản phẩm "' + name + '" thành công!');
                 closeModal();
                 loadAdminData();
             });
@@ -272,29 +315,41 @@
                 window.location.href = 'index.html';
             });
 
+            // Delete Custom Product
+            window.deleteProduct = function(id) {
+                if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
+                    let customProducts = JSON.parse(localStorage.getItem('anhkhai_custom_products')) || [];
+                    customProducts = customProducts.filter(p => p.id !== id);
+                    localStorage.setItem('anhkhai_custom_products', JSON.stringify(customProducts));
+                    loadAdminData();
+                }
+            };
+
             // Render Tables
             function loadAdminData() {
                 const tbody = document.getElementById('adminProductsTbody');
                 const defaultProds = [
-                    { id: 1, name: 'Áo phông LV', category: 'nam', price: 300000, badge: 'Hot', image_url: 'assets/images/anhaolv.jpg' },
-                    { id: 2, name: 'Áo khoác Gucci', category: 'nam', price: 500000, badge: 'Mới', image_url: 'assets/images/khoacgc.jpg' },
-                    { id: 3, name: 'Giày JD', category: 'phukien', price: 700000, badge: 'Hot', image_url: 'assets/images/giayjd.jpg' },
-                    { id: 4, name: 'Túi Xách LV', category: 'phukien', price: 300000, badge: 'Hot', image_url: 'assets/images/tuilv.jpg' },
-                    { id: 5, name: 'Dép Hermes', category: 'phukien', price: 350000, badge: 'Mới', image_url: 'assets/images/dephm.jpg' }
+                    { id: 'def_1', name: 'Áo phông LV', category: 'nam', price: 300000, badge: 'Hot', image_url: 'assets/images/anhaolv.jpg' },
+                    { id: 'def_2', name: 'Áo khoác Gucci', category: 'nam', price: 500000, badge: 'Mới', image_url: 'assets/images/khoacgc.jpg' },
+                    { id: 'def_3', name: 'Giày JD', category: 'phukien', price: 700000, badge: 'Hot', image_url: 'assets/images/giayjd.jpg' },
+                    { id: 'def_4', name: 'Túi Xách LV', category: 'phukien', price: 300000, badge: 'Hot', image_url: 'assets/images/tuilv.jpg' },
+                    { id: 'def_5', name: 'Dép Hermes', category: 'phukien', price: 350000, badge: 'Mới', image_url: 'assets/images/dephm.jpg' }
                 ];
                 const customProds = JSON.parse(localStorage.getItem('anhkhai_custom_products')) || [];
-                const allProds = [...defaultProds, ...customProds];
+                const allProds = [...customProds, ...defaultProds];
 
                 document.getElementById('prodCount').textContent = allProds.length;
                 tbody.innerHTML = allProds.map(p => `
                     <tr>
-                        <td><img src="${p.image_url}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;"></td>
+                        <td><img src="${p.image_url}" onerror="this.src='assets/images/anhaolv.jpg'" style="width:48px;height:48px;object-fit:cover;border-radius:8px;"></td>
                         <td><strong>${p.name}</strong></td>
                         <td><span class="section__tag" style="padding:2px 10px;font-size:0.75rem;">${p.category}</span></td>
                         <td><strong style="color:var(--primary);">${p.price.toLocaleString('vi-VN')}₫</strong></td>
                         <td>${p.badge ? `<span class="product-card__badge" style="position:static;">${p.badge}</span>` : '-'}</td>
                         <td>
-                            <button class="btn btn--sm btn--outline" onclick="alert('Đã xóa ${p.name}')">Xóa</button>
+                            ${String(p.id).startsWith('prod_') 
+                                ? `<button class="btn btn--sm btn--outline" onclick="deleteProduct('${p.id}')">Xóa</button>` 
+                                : `<span style="font-size:0.8rem;color:var(--text-muted);">Sẵn có</span>`}
                         </td>
                     </tr>
                 `).join('');

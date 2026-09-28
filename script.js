@@ -388,7 +388,7 @@
             article.setAttribute('data-category', prod.category || 'nam');
             article.innerHTML = `
                 <div class="product-card__image">
-                    <img src="${prod.image_url}" alt="${prod.name}" loading="lazy">
+                    <img src="${prod.image_url}" alt="${prod.name}" loading="lazy" onerror="this.onerror=null; this.src='assets/images/anhaolv.jpg';">
                     ${prod.badge ? `<span class="product-card__badge product-card__badge--hot">${prod.badge}</span>` : ''}
                 </div>
                 <div class="product-card__content">
