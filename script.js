@@ -290,23 +290,16 @@
     }
 
     function closeAuthModal() {
-        const user = JSON.parse(localStorage.getItem('anhkhai_user'));
-        if (!user) {
-            showToast('🔒 Bạn phải Đăng ký hoặc Đăng nhập tài khoản để vào Cửa Hàng!');
-            return;
-        }
         if (authModalOverlay) authModalOverlay.classList.remove('active');
-    }
-
-    function checkMandatoryAuth() {
-        const user = JSON.parse(localStorage.getItem('anhkhai_user'));
-        if (!user) {
-            setTimeout(openAuthModal, 300);
-        }
     }
 
     if (openAuthModalBtn) openAuthModalBtn.addEventListener('click', openAuthModal);
     if (closeAuthModalBtn) closeAuthModalBtn.addEventListener('click', closeAuthModal);
+    if (authModalOverlay) {
+        authModalOverlay.addEventListener('click', function(e) {
+            if (e.target === authModalOverlay) closeAuthModal();
+        });
+    }
 
     if (tabLoginBtn && tabRegisterBtn) {
         tabLoginBtn.addEventListener('click', function() {
@@ -428,7 +421,6 @@
     }
 
     updateAuthHeaderUI();
-    checkMandatoryAuth();
 
     // Render Admin Custom Products if added (with API & LocalStorage sync)
     async function renderCustomProducts() {
